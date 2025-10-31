@@ -8,7 +8,7 @@ This project provides an HTTP-triggered Azure Function that:
 
 - Receives workout data via webhook (POST requests)
 - Processes workout screenshots using Azure OpenAI's vision capabilities
-- Extracts exercise details, sets, reps, and weights
+- Extracts exercise details
 - Uploads workout images to Azure Blob Storage
 - Creates or updates entries in a Notion database
 - Automatically manages image lifecycle (90-day retention)
@@ -30,7 +30,6 @@ This project provides an HTTP-triggered Azure Function that:
 - Automatic image deletion after 90 days
 - Rate limiting (10 requests/minute per client)
 - Image validation and size limits (10MB max)
-- Support for JPEG, PNG, and HEIC formats
 
 ## Prerequisites
 
@@ -74,7 +73,6 @@ This will create:
 - `NOTION-API-KEY` - Your Notion integration API key
 - `NOTION-DATABASE-ID` - Your Notion database ID
 
-
 For detailed infrastructure documentation, see [docs/infra-README.md](docs/infra-README.md).
 
 ### 2. Deploy Azure Function Code
@@ -107,19 +105,12 @@ The Azure Function code is deployed manually through VS Code:
    - Once deployed, get the function URL from the Azure portal or VS Code
    - The webhook endpoint will be available at: `https://func-workouts-to-notion.azurewebsites.net/api/workout_webhook`
 
-
 ## Configuration
 
 ### Notion Setup
 
 1. Create a Notion integration at <https://www.notion.so/my-integrations>
-2. Create a database in Notion with the following properties:
-   - Title (title type)
-   - Date (date type)
-   - Exercises (text type)
-   - Image URL (url type)
-   - Any additional properties you want
-
+2. Create a database in Notion
 3. Share the database with your integration
 4. Copy the API key and database ID
 5. Update the Key Vault secrets in Azure:
@@ -129,69 +120,18 @@ The Azure Function code is deployed manually through VS Code:
    az keyvault secret set --vault-name kv-workouts-to-notion --name NOTION-DATABASE-ID --value "your-database-id"
    ```
 
-
 ### Webhook Setup
 
 Configure your workout app (Apple Fitness, Hevy, etc.) to send POST requests to:
 
 ```text
-https://func-workouts-to-notion.azurewebsites.net/api/workout_webhook?code=<function-key>
+https://<PLACEHOLDER>.azurewebsites.net/api/workout_webhook?code=<function-key>
 ```
 
 Get the function key from:
 
 - Azure Portal → Function App → Functions → workout_webhook → Function Keys
 - Or from VS Code Azure Functions extension
-
-
-## Usage
-
-Send a POST request with workout data:
-
-```json
-{
-  "image": "base64-encoded-image-data",
-  "filename": "workout.png",
-  "date": "2025-10-26"
-}
-```
-
-The function will:
-
-1. Validate the image (format, size)
-2. Upload to Azure Blob Storage
-3. Analyze with Azure OpenAI
-4. Create/update Notion entry
-5. Return the Notion page URL
-
-
-## Local Development
-
-1. **Install dependencies**
-
-   ```bash
-   cd function
-   pip install -r requirements.txt
-   ```
-
-2. **Configure local settings**
-
-   - Copy `function/local.settings.json.example` to `function/local.settings.json` (if exists)
-   - Configure Azure OpenAI, Storage, and Notion credentials
-
-3. **Run locally**
-
-   - Use VS Code's "Run Task" → "func: host start"
-   - Or run: `func host start` in the `function/` directory
-
-4. **Test locally**
-
-   ```bash
-   curl -X POST http://localhost:7071/api/workout_webhook \
-     -H "Content-Type: application/json" \
-     -d '{"image": "...", "filename": "test.png"}'
-   ```
-
 
 ## Project Structure
 
