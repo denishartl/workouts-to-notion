@@ -10,7 +10,10 @@ from typing import Dict, Any, Optional, List
 
 def add_workout_to_notion(workout_data: Dict[str, Any], routine_name: Optional[str] = None) -> Dict[str, Any]:
     """
-    Add a Hevy workout entry to the Notion Workouts database.
+    Add or update a Hevy workout entry in the Notion Workouts database.
+    
+    If a workout with the same Hevy ID already exists, it will be updated.
+    Otherwise, a new workout will be created.
     
     Args:
         workout_data: Workout data from Hevy API
@@ -85,6 +88,49 @@ def add_workout_to_notion(workout_data: Dict[str, Any], routine_name: Optional[s
                 "name": routine_name
             }
         }
+    
+    # Check if workout already exists by searching for Hevy ID
+    search_payload = {
+        "filter": {
+            "property": "Hevy ID",
+            "title": {
+                "equals": workout_id
+            }
+        }
+    }
+    
+    try:
+        search_response = requests.post(
+            f"https://api.notion.com/v1/databases/{notion_workouts_db_id}/query",
+            headers=headers,
+            json=search_payload,
+            timeout=10
+        )
+        
+        if search_response.status_code == 200:
+            results = search_response.json().get("results", [])
+            if results:
+                # Workout already exists, update it
+                page_id = results[0]["id"]
+                logging.info(f"Updating existing workout: Hevy ID {workout_id}")
+                
+                update_response = requests.patch(
+                    f"https://api.notion.com/v1/pages/{page_id}",
+                    headers=headers,
+                    json={"properties": properties},
+                    timeout=10
+                )
+                
+                if update_response.status_code != 200:
+                    logging.error(f"Failed to update workout: {update_response.status_code} - {update_response.text}")
+                    update_response.raise_for_status()
+                
+                return update_response.json()
+    except requests.exceptions.RequestException as e:
+        logging.warning(f"Could not search for existing workout: {str(e)}. Will create new entry.")
+    
+    # Create new workout entry
+    logging.info(f"Creating new workout: Hevy ID {workout_id}")
     
     # Prepare the request payload
     payload = {

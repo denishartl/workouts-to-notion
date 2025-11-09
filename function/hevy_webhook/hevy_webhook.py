@@ -164,12 +164,20 @@ def hevy_workout_webhook(req: func.HttpRequest) -> func.HttpResponse:
         
         logging.info(f"Successfully processed {len(processed_exercises)} exercises")
         
-        # Create Notion page with workout data
+        # Create or update Notion page with workout data
         try:
-            logging.info("Creating Notion page for workout")
+            logging.info("Creating or updating Notion page for workout")
             notion_response = add_workout_to_notion(workout_data, routine_name)
             notion_page_id = notion_response.get("id")
-            logging.info(f"Successfully created Notion page: {notion_page_id}")
+            
+            # Determine if it was created or updated based on the response
+            # Notion returns 'created_time' and 'last_edited_time' in the response
+            created_time = notion_response.get("created_time", "")
+            last_edited_time = notion_response.get("last_edited_time", "")
+            was_updated = created_time != last_edited_time
+            
+            action = "updated" if was_updated else "created"
+            logging.info(f"Successfully {action} Notion page: {notion_page_id}")
             
             response_data = {
                 "status": "success",
@@ -179,7 +187,8 @@ def hevy_workout_webhook(req: func.HttpRequest) -> func.HttpResponse:
                 "routine_name": routine_name,
                 "exercises_processed": len(processed_exercises),
                 "exercises": processed_exercises,
-                "message": "Workout successfully synced to Notion",
+                "action": action,
+                "message": f"Workout successfully {action} in Notion",
                 "timestamp": datetime.utcnow().isoformat()
             }
             
