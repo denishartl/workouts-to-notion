@@ -25,7 +25,7 @@ Hevy App → Webhook Trigger → Azure Function → Hevy API → Notion Database
 ### Step-by-Step Process
 
 1. **Webhook Reception**: The Azure Function receives a POST request with the workout ID
-2. **Validation**: Request size and rate limiting checks are performed
+2. **Validation**: Request size checks are performed
 3. **Parallel Fetch - Workout & Routine**: 
    - Workout details are fetched from Hevy API (`GET /v1/workouts/{workoutId}`)
    - If routine ID exists, routine details are fetched in parallel (`GET /v1/routines/{routineId}`)
@@ -175,7 +175,6 @@ The webhook handles various error scenarios:
 | Missing required fields | 400 | Webhook payload is missing `id` or `workoutId` |
 | Invalid JSON | 400 | Request body is not valid JSON |
 | Request too large | 413 | Request exceeds 10MB limit |
-| Rate limit exceeded | 429 | Too many requests from the same IP |
 | HEVY_API_KEY not set | 500 | Missing Hevy API configuration |
 | Notion config missing | 500 | Missing Notion API configuration |
 | Failed to fetch workout | 502 | Hevy API returned an error |
@@ -296,7 +295,6 @@ The following features are planned for future implementation:
 ## Security Considerations
 
 - API keys are stored as environment variables and never logged
-- Rate limiting prevents abuse of the webhook endpoint
 - Request size limits prevent memory exhaustion
 - All external API calls have timeouts configured
 - Input validation prevents injection attacks

@@ -7,7 +7,6 @@ import json
 from datetime import datetime
 
 from shared.validators import sanitize_text_input, MAX_REQUEST_SIZE
-from shared.rate_limiter import check_rate_limit
 
 
 def hevy_workout_webhook(req: func.HttpRequest) -> func.HttpResponse:
@@ -34,17 +33,6 @@ def hevy_workout_webhook(req: func.HttpRequest) -> func.HttpResponse:
                     f"Request too large. Maximum size is {MAX_REQUEST_SIZE / (1024*1024):.0f}MB",
                     status_code=413
                 )
-        
-        # Rate limiting check
-        client_ip = req.headers.get('X-Forwarded-For', 'unknown').split(',')[0].strip()
-        is_allowed, retry_after = check_rate_limit(client_ip)
-        if not is_allowed:
-            logging.warning(f"Rate limit exceeded for {client_ip}")
-            return func.HttpResponse(
-                f"Rate limit exceeded. Retry after {retry_after} seconds.",
-                status_code=429,
-                headers={"Retry-After": str(retry_after)}
-            )
         
         # Parse JSON payload
         try:
