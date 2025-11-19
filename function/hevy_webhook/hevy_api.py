@@ -20,7 +20,7 @@ def get_workout_details(workout_id: str) -> Optional[Dict[str, Any]]:
         Dictionary containing workout details, or None if error
     """
     hevy_api_key = os.environ.get("HEVY_API_KEY")
-    
+    logging.info(hevy_api_key)
     if not hevy_api_key:
         logging.error("HEVY_API_KEY not configured")
         return None
